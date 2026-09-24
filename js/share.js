@@ -97,6 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const formData = new FormData();
       formData.append('eventId', eventId);
       formData.append('userEmail', user.email);
+      if (user.name) {
+        formData.append('userName', user.name);
+      }
       formData.append('image', file);
 
       statusDiv.innerHTML = '<div class="alert alert-info">Uploading image...</div>';

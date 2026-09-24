@@ -34,9 +34,11 @@ function generateWheelEntries(imagesGroupedByEmail, maxEntriesPerEmail = 10) {
     for (let k = 0; k < numEntries; k++) {
       // Pick image without duplication (if k < shuffledImages.length)
       const selectedImage = shuffledImages[k % shuffledImages.length];
+      const userName = selectedImage.userName || email.split('@')[0];
 
       wheelEntries.push({
         email: email,
+        userName: userName,
         image: selectedImage,
         entryIndex: k + 1,
         totalUserEntries: numEntries,
@@ -179,9 +181,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const totalPhotos = imagesGroupedByEmail[email].length;
       const calculatedEntries = Math.min(totalPhotos, Math.max(1, maxVal));
 
+      const sampleImg = imagesGroupedByEmail[email][0];
+      const displayName = (sampleImg && sampleImg.userName) ? `${sampleImg.userName} (${email})` : email;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${escapeHtml(email)}</strong></td>
+        <td><strong>${escapeHtml(displayName)}</strong></td>
         <td style="text-align: center;">${totalPhotos}</td>
         <td style="text-align: center;"><span class="badge" style="background:#e8f0fe; color:#1a73e8; padding:2px 8px; border-radius:12px; font-weight:600;">${calculatedEntries}</span></td>
       `;
@@ -253,12 +258,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       ctx.fillStyle = '#ffffff';
       ctx.font = numSlices > 20 ? 'bold 11px sans-serif' : 'bold 13px sans-serif';
 
-      // Truncate email if long
-      let displayEmail = entry.email;
-      if (displayEmail.length > 18) {
-        displayEmail = displayEmail.substring(0, 16) + '...';
+      // Use userName for slice label if available, fallback to email
+      let displayName = entry.userName || entry.email;
+      if (displayName.length > 18) {
+        displayName = displayName.substring(0, 16) + '...';
       }
-      ctx.fillText(displayEmail, radius * 0.9, 0);
+      ctx.fillText(displayName, radius * 0.9, 0);
 
       // Draw thumbnail image if preloaded
       const imgObj = loadedImageElements[entry.image.url];
@@ -354,9 +359,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showWinner(winner) {
     if (!winner) return;
 
-    if (statusMsg) statusMsg.textContent = `🎉 Winner: ${winner.email}!`;
+    const winnerName = winner.userName ? `${winner.userName} (${winner.email})` : winner.email;
 
-    if (winnerEmailDisplay) winnerEmailDisplay.textContent = winner.email;
+    if (statusMsg) statusMsg.textContent = `🎉 Winner: ${winnerName}!`;
+
+    if (winnerEmailDisplay) winnerEmailDisplay.textContent = winnerName;
     if (winnerImgDisplay) {
       winnerImgDisplay.src = winner.image.url;
     }

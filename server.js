@@ -113,13 +113,35 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No image file uploaded' });
   }
-  const { eventId, userEmail } = req.body;
+  const { eventId, userEmail, userName } = req.body;
   if (!eventId || !userEmail) {
     return res.status(400).json({ error: 'eventId and userEmail are required' });
   }
 
   const cleanUserEmail = userEmail.trim().toLowerCase();
+  const displayName = userName ? userName.trim() : cleanUserEmail.split('@')[0];
   const relativePath = `Events/${eventId}/${cleanUserEmail}/${req.file.filename}`;
+
+  // Log/update user email to name mapping in Events/{eventId}/users.json
+  try {
+    const eventDir = path.join(__dirname, 'Events', eventId);
+    fs.mkdirSync(eventDir, { recursive: true });
+    const usersJsonPath = path.join(eventDir, 'users.json');
+    let usersData = {};
+
+    if (fs.existsSync(usersJsonPath)) {
+      try {
+        usersData = JSON.parse(fs.readFileSync(usersJsonPath, 'utf8'));
+      } catch (e) {
+        usersData = {};
+      }
+    }
+
+    usersData[cleanUserEmail] = displayName;
+    fs.writeFileSync(usersJsonPath, JSON.stringify(usersData, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to log user name in users.json:', err);
+  }
 
   res.status(201).json({
     message: 'Image uploaded successfully',
@@ -127,7 +149,8 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     url: `/${relativePath}`,
     filename: req.file.filename,
     eventId,
-    userEmail: cleanUserEmail
+    userEmail: cleanUserEmail,
+    userName: displayName
   });
 }, (err, req, res, next) => {
   if (err) {
@@ -175,6 +198,21 @@ app.get('/api/events/:eventId/images', (req, res) => {
         }
       }
     }
+
+    // Read users.json if present to attach user names
+    let usersData = {};
+    const usersJsonPath = path.join(eventDir, 'users.json');
+    if (fs.existsSync(usersJsonPath)) {
+      try {
+        usersData = JSON.parse(fs.readFileSync(usersJsonPath, 'utf8'));
+      } catch (e) {
+        usersData = {};
+      }
+    }
+
+    images.forEach(img => {
+      img.userName = usersData[img.userEmail] || img.userEmail.split('@')[0];
+    });
 
     // Sort newest first
     images.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
