@@ -47,4 +47,16 @@ describe('Event API endpoints', () => {
     expect(res.statusCode).toEqual(200);
     expect(res.body.title).toEqual('Tech Conference 2025');
   });
+
+  test('GET /api/events/:eventId prevents path traversal attempts', async () => {
+    const res = await request(app).get('/api/events/..%2F..%2Fetc');
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toHaveProperty('error', 'Invalid event ID');
+  });
+
+  test('GET /api/events/:eventId/images prevents path traversal attempts', async () => {
+    const res = await request(app).get('/api/events/..%2F..%2Fetc/images');
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toHaveProperty('error', 'Invalid event ID');
+  });
 });
