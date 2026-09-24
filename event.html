@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Management - PictureWall</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="container">
+    <div id="unauthorized-message" style="display: none;">
+      <div class="card">
+        <div class="alert alert-danger">
+          <h3>Access Denied</h3>
+          <p id="access-denied-reason">By default, only authorized users (lloyd.miguel@gmail.com) can manage events.</p>
+        </div>
+        <p>Please sign in with an authorized Google account to view and manage events.</p>
+        <br>
+        <button class="btn btn-primary" onclick="Auth.mockSignIn('lloyd.miguel@gmail.com'); location.reload();">Sign In as Admin (Dev)</button>
+      </div>
+    </div>
+
+    <div id="admin-content" style="display: none;">
+      <div class="card">
+        <h2>Create New Event</h2>
+        <form id="create-event-form">
+          <div class="form-group">
+            <label for="event-title">Event Title *</label>
+            <input type="text" id="event-title" class="form-control" placeholder="e.g. Wedding Celebration 2025" required>
+          </div>
+          <div class="form-group">
+            <label for="event-id">Custom Event ID (optional)</label>
+            <input type="text" id="event-id" class="form-control" placeholder="e.g. wedding-2025">
+            <small style="color: var(--text-muted);">If left blank, an ID will be generated automatically from the title.</small>
+          </div>
+          <div class="form-group">
+            <label for="event-desc">Description</label>
+            <textarea id="event-desc" class="form-control" rows="3" placeholder="Brief event description..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-create-event">Create Event</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Managed Events</h2>
+        <div id="events-list-container" class="grid">
+          <p style="color: var(--text-muted);">Loading events...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/event.js"></script>
+</body>
+</html>
