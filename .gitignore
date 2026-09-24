@@ -1,0 +1,4 @@
+node_modules/
+Events/
+coverage/
+*.log
