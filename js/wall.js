@@ -2,6 +2,9 @@
  * Wall Gallery Page Handler
  */
 
+// Cache previous JSON payload to skip DOM re-renders when gallery data is unchanged during 10s polling
+let lastImagesJson = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('eventId');
@@ -56,6 +59,14 @@ async function loadWallGallery(eventId) {
   try {
     const res = await fetch(`/api/events/${encodeURIComponent(eventId)}/images`);
     const images = await res.json();
+
+    // ⚡ Performance optimization: Compare serialized image data to skip DOM updates when unchanged.
+    // Prevents unnecessary HTML re-parsing, DOM node recreation, image reload flickers, and layout thrashing on every 10s poll.
+    const currentJson = JSON.stringify(images);
+    if (lastImagesJson === currentJson) {
+      return;
+    }
+    lastImagesJson = currentJson;
 
     if (!images || images.length === 0) {
       gallery.innerHTML = `
