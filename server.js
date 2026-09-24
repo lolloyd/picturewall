@@ -57,13 +57,29 @@ app.get('/api/events', (req, res) => {
   res.json(eventList);
 });
 
+// Helper function to safely resolve event directory path and prevent path traversal
+function getSafeEventDir(eventId) {
+  if (!eventId || typeof eventId !== 'string') return null;
+  const eventsBaseDir = path.resolve(__dirname, 'Events');
+  const targetDir = path.resolve(eventsBaseDir, eventId);
+  // Security check: Ensure target directory stays inside Events directory
+  if (!targetDir.startsWith(eventsBaseDir + path.sep) && targetDir !== eventsBaseDir) {
+    return null;
+  }
+  return targetDir;
+}
+
 // Get single event details
 app.get('/api/events/:eventId', (req, res) => {
   const eventId = req.params.eventId;
+  const eventDir = getSafeEventDir(eventId);
+  if (!eventDir) {
+    return res.status(400).json({ error: 'Invalid event ID' });
+  }
+
   const event = events.get(eventId);
   if (!event) {
     // Return standard response even if not pre-registered in memory if directory exists
-    const eventDir = path.join(__dirname, 'Events', eventId);
     if (fs.existsSync(eventDir)) {
       return res.json({ id: eventId, title: `Event ${eventId}`, description: '' });
     }
@@ -163,7 +179,11 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // Get images for event
 app.get('/api/events/:eventId/images', (req, res) => {
   const eventId = req.params.eventId;
-  const eventDir = path.join(__dirname, 'Events', eventId);
+  const eventDir = getSafeEventDir(eventId);
+
+  if (!eventDir) {
+    return res.status(400).json({ error: 'Invalid event ID' });
+  }
 
   if (!fs.existsSync(eventDir)) {
     return res.json([]);
