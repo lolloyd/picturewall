@@ -103,6 +103,7 @@ async function loadEvents() {
     events.forEach(event => {
       const shareUrl = `${window.location.origin}/share.html?eventId=${encodeURIComponent(event.id)}`;
       const wallUrl = `${window.location.origin}/wall.html?eventId=${encodeURIComponent(event.id)}`;
+      const wheelUrl = `${window.location.origin}/wheel.html?eventId=${encodeURIComponent(event.id)}`;
 
       const card = document.createElement('div');
       card.className = 'card';
@@ -127,9 +128,12 @@ async function loadEvents() {
           <a href="${shareUrl}" target="_blank" style="font-size: 0.8rem; word-break: break-all; color: var(--primary-color);">${shareUrl}</a>
         </div>
 
-        <div style="display: flex; gap: 0.5rem;">
-          <a href="${shareUrl}" class="btn btn-primary btn-sm" style="flex: 1;" target="_blank">Upload / Share</a>
-          <a href="${wallUrl}" class="btn btn-secondary btn-sm" style="flex: 1;" target="_blank">View Wall</a>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="${shareUrl}" class="btn btn-primary btn-sm" style="flex: 1;" target="_blank">Upload / Share</a>
+            <a href="${wallUrl}" class="btn btn-secondary btn-sm" style="flex: 1;" target="_blank">View Wall</a>
+          </div>
+          <a href="${wheelUrl}" class="btn btn-secondary btn-sm" style="width: 100%; border-color: var(--primary-color); color: var(--primary-color);">🎡 Wheel of Names</a>
         </div>
       `;
 
