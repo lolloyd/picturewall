@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Handle Form Submission
   const uploadForm = document.getElementById('upload-form');
   const statusDiv = document.getElementById('upload-status');
+  const uploadBtn = document.getElementById('btn-upload');
 
   if (uploadForm) {
     uploadForm.addEventListener('submit', async (e) => {
@@ -99,6 +100,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       formData.append('image', file);
 
       statusDiv.innerHTML = '<div class="alert alert-info">Uploading image...</div>';
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+      }
 
       try {
         const res = await fetch('/api/upload', {
@@ -119,6 +124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) {
         console.error('Upload error:', err);
         statusDiv.innerHTML = '<div class="alert alert-danger">Failed to upload image.</div>';
+      } finally {
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = 'Upload Photo';
+        }
       }
     });
   }
