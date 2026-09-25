@@ -177,7 +177,9 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 });
 
 // Get images for event
-app.get('/api/events/:eventId/images', (req, res) => {
+// ⚡ Performance Optimization: Converted synchronous disk I/O (fs.readdirSync, fs.statSync, fs.readFileSync)
+// to async non-blocking fs.promises with Promise.all parallelization. Prevents event loop blocking during frequent gallery polling.
+app.get('/api/events/:eventId/images', async (req, res) => {
   const eventId = req.params.eventId;
   const eventDir = getSafeEventDir(eventId);
 
@@ -185,54 +187,60 @@ app.get('/api/events/:eventId/images', (req, res) => {
     return res.status(400).json({ error: 'Invalid event ID' });
   }
 
-  if (!fs.existsSync(eventDir)) {
-    return res.json([]);
-  }
-
-  const images = [];
-
   try {
-    const userDirs = fs.readdirSync(eventDir, { withFileTypes: true });
-
-    for (const userDir of userDirs) {
-      if (userDir.isDirectory()) {
-        const userEmail = userDir.name;
-        const userDirPath = path.join(eventDir, userEmail);
-        const files = fs.readdirSync(userDirPath, { withFileTypes: true });
-
-        for (const file of files) {
-          if (file.isFile() && !file.name.startsWith('.')) {
-            const filePath = path.join(userDirPath, file.name);
-            const stats = fs.statSync(filePath);
-            const relativePath = `Events/${eventId}/${userEmail}/${file.name}`;
-
-            images.push({
-              filename: file.name,
-              userEmail: userEmail,
-              eventId: eventId,
-              url: `/${relativePath}`,
-              path: relativePath,
-              createdAt: stats.birthtime || stats.mtime
-            });
-          }
-        }
-      }
+    try {
+      await fs.promises.access(eventDir);
+    } catch {
+      return res.json([]);
     }
 
-    // Read users.json if present to attach user names
+    const userDirs = await fs.promises.readdir(eventDir, { withFileTypes: true });
+
+    // Read users.json concurrently if present to attach user names
     let usersData = {};
     const usersJsonPath = path.join(eventDir, 'users.json');
-    if (fs.existsSync(usersJsonPath)) {
-      try {
-        usersData = JSON.parse(fs.readFileSync(usersJsonPath, 'utf8'));
-      } catch (e) {
-        usersData = {};
-      }
+    try {
+      const usersRaw = await fs.promises.readFile(usersJsonPath, 'utf8');
+      usersData = JSON.parse(usersRaw);
+    } catch (e) {
+      usersData = {};
     }
 
-    images.forEach(img => {
-      img.userName = usersData[img.userEmail] || img.userEmail.split('@')[0];
-    });
+    // Process all user directories and file stat calls concurrently via Promise.all
+    const userPromises = userDirs
+      .filter(userDir => userDir.isDirectory())
+      .map(async (userDir) => {
+        const userEmail = userDir.name;
+        const userDirPath = path.join(eventDir, userEmail);
+
+        try {
+          const files = await fs.promises.readdir(userDirPath, { withFileTypes: true });
+          const filePromises = files
+            .filter(file => file.isFile() && !file.name.startsWith('.'))
+            .map(async (file) => {
+              const filePath = path.join(userDirPath, file.name);
+              const relativePath = `Events/${eventId}/${userEmail}/${file.name}`;
+              const stats = await fs.promises.stat(filePath);
+
+              return {
+                filename: file.name,
+                userEmail,
+                eventId,
+                url: `/${relativePath}`,
+                path: relativePath,
+                createdAt: stats.birthtime || stats.mtime,
+                userName: usersData[userEmail] || userEmail.split('@')[0]
+              };
+            });
+
+          return await Promise.all(filePromises);
+        } catch {
+          return [];
+        }
+      });
+
+    const userResults = await Promise.all(userPromises);
+    const images = userResults.flat();
 
     // Sort newest first
     images.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
