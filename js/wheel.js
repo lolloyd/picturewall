@@ -332,8 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Ease Out Cubic
       const easeOut = 1 - Math.pow(1 - progress, 3);
 
-      currentRotation = currentRotation + (finalRotation - currentRotation) * (easeOut - (progress > 0 ? 1 - Math.pow(1 - (progress - 0.016), 3) : 0));
-
       // Direct calculation for frame
       const interpolatedRotation = currentRotation + (finalRotation - currentRotation) * easeOut;
       currentRotation = interpolatedRotation;
