@@ -59,4 +59,13 @@ describe('Event API endpoints', () => {
     expect(res.statusCode).toEqual(400);
     expect(res.body).toHaveProperty('error', 'Invalid event ID');
   });
+
+  test('GET /setup.html serves setup guide with FTP and Google OAuth instructions', async () => {
+    const res = await request(app).get('/setup.html');
+    expect(res.statusCode).toEqual(200);
+    expect(res.text).toContain('Setup & FTP Deployment Guide');
+    expect(res.text).toContain('FTP / SFTP Deployment Steps');
+    expect(res.text).toContain('Google Sign-In & Google Cloud Console Setup');
+    expect(res.text).toContain('chmod 775 Events');
+  });
 });

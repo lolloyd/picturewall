@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup & FTP Deployment Guide - PictureWall</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    .guide-section {
+      margin-bottom: 2.5rem;
+    }
+    .guide-step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: flex-start;
+    }
+    .step-number {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-content {
+      flex: 1;
+    }
+    .step-content h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+    }
+    code, pre {
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    }
+    pre {
+      background-color: #2d3748;
+      color: #f7fafc;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+      margin: 0.75rem 0;
+      line-height: 1.4;
+    }
+    code:not(pre code) {
+      background-color: #edf2f7;
+      color: #c53030;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .file-tree {
+      background: #f1f3f4;
+      padding: 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-family: monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .permission-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    .permission-table th, .permission-table td {
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+    .permission-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+    .badge-required {
+      background-color: #e53e3e;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-optional {
+      background-color: #718096;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+
+  <main class="container">
+    <div class="card" style="background: linear-gradient(135deg, #1a73e8 0%, #34a853 100%); color: white; padding: 2rem;">
+      <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: white;">🚀 PictureWall Deployment & Setup Guide</h1>
+      <p style="font-size: 1.05rem; opacity: 0.95;">
+        Learn how to deploy PictureWall to your server via FTP, configure file permissions for image storage, and set up Google Sign-In with Google Identity Services (GSI).
+      </p>
+    </div>
+
+    <!-- Quick Navigation / Table of Contents -->
+    <div class="card">
+      <h2>Table of Contents</h2>
+      <ul style="padding-left: 1.5rem; line-height: 1.8;">
+        <li><a href="#architecture-overview" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">1. Architecture Overview</a></li>
+        <li><a href="#ftp-deployment" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">2. FTP / SFTP Deployment Steps</a></li>
+        <li><a href="#permissions-setup" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">3. Server Directory & File Permission Setup (chmod)</a></li>
+        <li><a href="#node-process-management" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">4. Node.js Environment & Process Manager Setup</a></li>
+        <li><a href="#google-signin-setup" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">5. Google Sign-In & Google Cloud Console Setup</a></li>
+        <li><a href="#environment-variables" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">6. Environment Variables & Admin Email Configuration</a></li>
+        <li><a href="#troubleshooting-checklist" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">7. Verification & Troubleshooting Checklist</a></li>
+      </ul>
+    </div>
+
+    <!-- Section 1: Architecture Overview -->
+    <div id="architecture-overview" class="card guide-section">
+      <h2>1. Architecture Overview</h2>
+      <p>
+        PictureWall is a Node.js and Express application designed to serve as an interactive event picture marquee gallery and winner wheel.
+      </p>
+      <div style="margin-top: 1rem;" class="alert alert-info">
+        <strong>Key Application Features & Storage Mechanics:</strong>
+        <ul style="margin-top: 0.5rem; padding-left: 1.25rem;">
+          <li><strong>Backend Framework:</strong> Express.js server running in Node.js (default port: <code>3000</code>).</li>
+          <li><strong>Upload Handling:</strong> <code>Multer</code> handles multi-part image uploads up to 10MB per file.</li>
+          <li><strong>Directory Hierarchy:</strong> Photos are saved on disk at <code>Events/{eventId}/{userEmail}/{timestamp-filename}</code>.</li>
+          <li><strong>User Metadata:</strong> User display names are mapped in <code>Events/{eventId}/users.json</code>.</li>
+          <li><strong>Authentication:</strong> Google Identity Services (OAuth 2.0 JWTs verified on frontend & parsed securely).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 2: FTP Deployment -->
+    <div id="ftp-deployment" class="card guide-section">
+      <h2>2. FTP / SFTP Deployment Steps</h2>
+      <p style="margin-bottom: 1.5rem;">Follow these steps to transfer PictureWall to your remote Linux or hosting server using FileZilla, Cyberduck, or SFTP.</p>
+
+      <div class="guide-step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Prepare Local Files for Upload</h3>
+          <p>Ensure you upload only source files and exclude local development dependencies and artifacts.</p>
+          <div class="file-tree">
+📁 picturewall/ (Root Directory)<br>
+├── 📁 css/<br>
+│   └── styles.css<br>
+├── 📁 js/<br>
+│   ├── auth.js<br>
+│   ├── event.js<br>
+│   ├── nav.js<br>
+│   ├── share.js<br>
+│   ├── utils.js<br>
+│   ├── wall.js<br>
+│   └── wheel.js<br>
+├── 📄 event.html<br>
+├── 📄 share.html<br>
+├── 📄 wall.html<br>
+├── 📄 wheel.html<br>
+├── 📄 setup.html<br>
+├── 📄 server.js<br>
+├── 📄 package.json<br>
+└── 📄 pnpm-lock.yaml (or package-lock.json)<br>
+<br>
+🚫 <strong>DO NOT UPLOAD:</strong> <code>node_modules/</code>, <code>.git/</code>, or local temporary uploads in <code>Events/</code>.
+          </div>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Connect to Remote Server via FTP/SFTP</h3>
+          <p>Open your FTP client (e.g. FileZilla, Cyberduck, or Command Line SFTP):</p>
+          <ul style="padding-left: 1.25rem; margin-top: 0.5rem;">
+            <li><strong>Protocol:</strong> SFTP (SSH File Transfer Protocol - Recommended) or FTP</li>
+            <li><strong>Host:</strong> <code>your-server-domain.com</code> or Server IP</li>
+            <li><strong>Port:</strong> 22 (for SFTP) or 21 (for FTP)</li>
+            <li><strong>Remote Target Directory:</strong> <code>/var/www/picturewall</code> or <code>/home/username/apps/picturewall</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Transfer Files</h3>
+          <p>Drag and drop all project files into your target web server application directory.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: File Permissions Setup (chmod) -->
+    <div id="permissions-setup" class="card guide-section">
+      <h2>3. Server Directory & File Permission Setup (chmod)</h2>
+      <p>
+        Because PictureWall dynamically creates subfolders under <code>Events/{eventId}/{userEmail}/</code> when admins create events or users upload photos, correct folder write permissions are mandatory!
+      </p>
+
+      <table class="permission-table">
+        <thead>
+          <tr>
+            <th>Directory / Path</th>
+            <th>Required Permission</th>
+            <th>chmod Command</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Events/</code> <span class="badge-required">Required</span></td>
+            <td><code>775</code> or <code>777</code></td>
+            <td><code>chmod 775 Events</code> or <code>chmod 777 Events</code></td>
+            <td>Allows Node.js web server process to create subdirectories and write images & <code>users.json</code>.</td>
+          </tr>
+          <tr>
+            <td>Project Root Directory</td>
+            <td><code>755</code></td>
+            <td><code>chmod 755 /var/www/picturewall</code></td>
+            <td>Standard executable directory permission for web server access.</td>
+          </tr>
+          <tr>
+            <td>Source Files (<code>*.html</code>, <code>*.js</code>, <code>*.css</code>)</td>
+            <td><code>644</code></td>
+            <td><code>find . -type f -exec chmod 644 {} +</code></td>
+            <td>Read permission for static files.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-danger" style="margin-top: 1rem;">
+        <strong>⚠️ Crucial Upload Permission Troubleshooting:</strong><br>
+        If image uploads fail with <code>EACCES: permission denied, mkdir '.../Events/...'</code>, execute the following commands in SSH terminal:
+<pre><code># Create the Events directory if it doesn't exist
+mkdir -p Events
+
+# Set write access permissions
+chmod -R 775 Events
+
+# Alternatively, set ownership to your Node process user (e.g., www-data or node)
+sudo chown -R www-data:www-data Events</code></pre>
+      </div>
+    </div>
+
+    <!-- Section 4: Node Process Management -->
+    <div id="node-process-management" class="card guide-section">
+      <h2>4. Node.js Environment & Process Manager Setup</h2>
+      <p>Once files are uploaded via FTP, connect to your server via SSH terminal to install dependencies and run the server using PM2 or systemd.</p>
+
+      <div class="guide-step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Install Production Dependencies</h3>
+          <p>Run <code>npm</code> or <code>pnpm</code> inside the application directory:</p>
+<pre><code>cd /var/www/picturewall
+npm install --production
+# OR if using pnpm:
+pnpm install --prod</code></pre>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Start Application with PM2 Process Manager</h3>
+          <p>PM2 ensures your Node.js application stays online continuously and automatically restarts after crashes or server reboots.</p>
+<pre><code># Install PM2 globally if not installed
+sudo npm install -g pm2
+
+# Start server with Environment Variables
+PORT=3000 ADMIN_EMAIL="your-admin@gmail.com" GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com" pm2 start server.js --name "picturewall"
+
+# Save PM2 state for system startup reboot persistence
+pm2 save
+pm2 startup</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Google Sign-In Setup -->
+    <div id="google-signin-setup" class="card guide-section">
+      <h2>5. Google Sign-In & Google Cloud Console Setup</h2>
+      <p>PictureWall utilizes Google Identity Services (GSI) for user authentication and admin authorization. Follow these steps to generate your OAuth Client ID.</p>
+
+      <div class="guide-step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Create or Select a Google Cloud Project</h3>
+          <ol style="padding-left: 1.25rem; line-height: 1.6;">
+            <li>Navigate to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>.</li>
+            <li>Click the project dropdown in the top bar and select <strong>New Project</strong>.</li>
+            <li>Enter Project Name: <code>PictureWall App</code> and click <strong>Create</strong>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Configure OAuth Consent Screen</h3>
+          <ol style="padding-left: 1.25rem; line-height: 1.6;">
+            <li>In the left sidebar, go to <strong>APIs & Services</strong> &gt; <strong>OAuth consent screen</strong>.</li>
+            <li>Choose User Type: <strong>External</strong> (available to any user with a Google account) or <strong>Internal</strong> (GSuite/Workspace).</li>
+            <li>Fill out App Information:
+              <ul style="padding-left: 1.25rem; margin-top: 0.25rem;">
+                <li><strong>App name:</strong> <code>PictureWall</code></li>
+                <li><strong>User support email:</strong> Select your email.</li>
+                <li><strong>Developer contact information:</strong> Enter your email.</li>
+              </ul>
+            </li>
+            <li><strong>Scopes:</strong> Add default scopes: <code>.../auth/userinfo.email</code>, <code>.../auth/userinfo.profile</code>, <code>openid</code>.</li>
+            <li>Save and continue through to the dashboard.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="guide-step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Create OAuth 2.0 Web Client Credentials</h3>
+          <ol style="padding-left: 1.25rem; line-height: 1.6;">
+            <li>Go to <strong>APIs & Services</strong> &gt; <strong>Credentials</strong>.</li>
+            <li>Click <strong>+ CREATE CREDENTIALS</strong> &gt; <strong>OAuth client ID</strong>.</li>
+            <li>Set Application type to <strong>Web application</strong>.</li>
+            <li>Set Name: <code>PictureWall Web Client</code>.</li>
+            <li><strong>Authorized JavaScript origins:</strong> Add your domain(s) exact protocol, host, and port:
+              <ul style="padding-left: 1.25rem; margin-top: 0.25rem;">
+                <li><code>https://yourdomain.com</code></li>
+                <li><code>http://localhost:3000</code> (for local testing)</li>
+              </ul>
+            </li>
+            <li><strong>Authorized redirect URIs:</strong> (Optional for standard GSI popups, recommended to add domain root):
+              <ul style="padding-left: 1.25rem; margin-top: 0.25rem;">
+                <li><code>https://yourdomain.com</code></li>
+              </ul>
+            </li>
+            <li>Click <strong>CREATE</strong> and copy your new <strong>Client ID</strong> (e.g. <code>1234567890-abcdef.apps.googleusercontent.com</code>).</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Environment Variables & Admin Email Configuration -->
+    <div id="environment-variables" class="card guide-section">
+      <h2>6. Environment Variables & Admin Email Configuration</h2>
+      <p>Configure environment variables when launching server process or in a <code>.env</code> file / system environment.</p>
+
+      <table class="permission-table">
+        <thead>
+          <tr>
+            <th>Variable</th>
+            <th>Default Value</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>GOOGLE_CLIENT_ID</code></td>
+            <td><code>""</code> (Empty)</td>
+            <td>Your Google OAuth 2.0 Client ID from Google Cloud Console. Enables live Google OAuth login button.</td>
+          </tr>
+          <tr>
+            <td><code>ADMIN_EMAIL</code></td>
+            <td><code>lloyd.miguel@gmail.com</code></td>
+            <td>The authorized Google email address permitted to create and manage events.</td>
+          </tr>
+          <tr>
+            <td><code>PORT</code></td>
+            <td><code>3000</code></td>
+            <td>HTTP port for Express web server.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-success" style="margin-top: 1rem;">
+        <strong>💡 Tip: Creating a <code>.env</code> or Environment Launch Script:</strong><br>
+        Create an startup script or PM2 ecosystem config:
+<pre><code># Example: starting server with env inline
+GOOGLE_CLIENT_ID="123456789-xyz.apps.googleusercontent.com" ADMIN_EMAIL="admin@yourdomain.com" PORT=3000 node server.js</code></pre>
+      </div>
+    </div>
+
+    <!-- Section 7: Verification & Troubleshooting -->
+    <div id="troubleshooting-checklist" class="card guide-section">
+      <h2>7. Verification & Troubleshooting Checklist</h2>
+      <p>Use this checklist after deployment to confirm all parts of PictureWall are working correctly:</p>
+
+      <div style="line-height: 2;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+          <input type="checkbox"> Test Configuration API Endpoint: Open <code>/api/config</code> in browser and verify <code>adminEmail</code> and <code>googleClientId</code> match.
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+          <input type="checkbox"> Check Write Permissions: Create a test event on <code>event.html</code> and confirm subfolder is created in <code>Events/{eventId}/</code>.
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+          <input type="checkbox"> Verify Google Sign-In Origin: If sign-in fails with origin mismatch, check console logs and ensure exact domain protocol/port is added under Authorized JavaScript Origins in Google Cloud Console.
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
+          <input type="checkbox"> Photo Upload Test: Access <code>share.html?eventId=test-event</code> and upload a test photo to confirm <code>Events/{eventId}/{userEmail}/...</code> image writing works.
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
