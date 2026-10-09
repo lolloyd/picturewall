@@ -18,6 +18,7 @@
         <nav>
           <ul class="nav-links">
             <li><a href="event.html" class="${currentPage === 'event.html' ? 'active' : ''}">Event Management</a></li>
+            <li><a href="setup.html" class="${currentPage === 'setup.html' ? 'active' : ''}">Setup Guide</a></li>
           </ul>
         </nav>
         <div class="nav-auth">
